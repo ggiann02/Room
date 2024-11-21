@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Three.js Model Viewer</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: Arial, sans-serif;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        #error {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: red;
+            font-family: Arial, sans-serif;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading model...</div>
+    <div id="error"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script>
+        // Debug function
+        function showError(message) {
+            document.getElementById('error').textContent = message;
+        }
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x808080);
+
+        const gridHelper = new THREE.GridHelper(10, 10);
+        scene.add(gridHelper);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(2, 2, 2);
+        scene.add(directionalLight);
+
+        // Camera position
+        camera.position.set(5, 5, 5);
+        camera.lookAt(0, 0, 0);
+
+        // OrbitControls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // Loading manager
+        const loadingManager = new THREE.LoadingManager();
+        const loadingElement = document.getElementById('loading');
+
+        loadingManager.onStart = () => {
+            loadingElement.style.display = 'block';
+            showError('Starting to load model...');
+        };
+
+        loadingManager.onLoad = () => {
+            loadingElement.style.display = 'none';
+            showError('Model loaded successfully!');
+        };
+
+        loadingManager.onError = (url) => {
+            loadingElement.style.display = 'none';
+            showError('Error loading model: ' + url);
+        };
+
+        // Model loader
+        const loader = new THREE.GLTFLoader(loadingManager);
+        
+        // Adjust this path to match your GitHub repository structure
+        // If your repository is at username.github.io/repo-name, use:
+        // const modelUrl = '/repo-name/models/isometricRoom.glb';
+        // If your repository is at username.github.io, use:
+        const modelUrl = '/Room/isometricRoom.glb';
+        
+        loader.load(modelUrl, 
+            function (gltf) {
+                const model = gltf.scene;
+                
+                // Center the model
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                model.position.sub(center);
+                
+                // Scale the model
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 2 / maxDim;
+                model.scale.multiplyScalar(scale);
+                
+                scene.add(model);
+                showError('Model added to scene successfully!');
+            },
+            function (xhr) {
+                const percent = xhr.loaded / xhr.total * 100;
+                showError(`Loading progress: ${percent.toFixed(1)}%`);
+            },
+            function (error) {
+                showError('Error loading model: ' + error.message);
+                console.error('An error occurred loading the model:', error);
+            }
+        );
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', onWindowResize, false);
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>
