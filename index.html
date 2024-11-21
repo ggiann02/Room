@@ -116,7 +116,7 @@
                 // Scale the model (increased scale factor)
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const scale = 8 / maxDim; // Increased from 2 to 8 for larger size
+                const scale = 10 / maxDim; // Increased from 2 to 8 for larger size
                 model.scale.multiplyScalar(scale);
                 
                 // Lift the model above the grid
