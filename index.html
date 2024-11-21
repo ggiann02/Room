@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Three.js Model Viewer</title>
+    <title>Room</title>
     <style>
-        body { margin: 0; }
+        body { margin: 0; background: black; }
         canvas { display: block; }
         #loading {
             position: fixed;
@@ -11,7 +11,8 @@
             left: 50%;
             transform: translate(-50%, -50%);
             font-family: Arial, sans-serif;
-            background: white;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
             padding: 20px;
             border-radius: 5px;
             display: none;
@@ -20,9 +21,9 @@
             position: fixed;
             top: 10px;
             left: 10px;
-            color: red;
+            color: #ff4444;
             font-family: Arial, sans-serif;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.8);
             padding: 10px;
         }
     </style>
@@ -35,16 +36,16 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script>
-        // Debug function
         function showError(message) {
             document.getElementById('error').textContent = message;
         }
 
         // Scene setup
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x808080);
+        scene.background = new THREE.Color(0x000000); // Black background
 
-        const gridHelper = new THREE.GridHelper(10, 10);
+        // Larger grid with brighter color
+        const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x444444);
         scene.add(gridHelper);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -52,15 +53,25 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        // Adjusted lighting for dark background
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Increased intensity
         scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(2, 2, 2);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5); // Increased intensity
+        directionalLight.position.set(5, 5, 5);
         scene.add(directionalLight);
 
+        // Add point lights for better illumination
+        const pointLight1 = new THREE.PointLight(0xffffff, 1);
+        pointLight1.position.set(10, 10, 10);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0xffffff, 1);
+        pointLight2.position.set(-10, 10, -10);
+        scene.add(pointLight2);
+
         // Camera position
-        camera.position.set(5, 5, 5);
+        camera.position.set(10, 10, 10);
         camera.lookAt(0, 0, 0);
 
         // OrbitControls
@@ -90,10 +101,7 @@
         // Model loader
         const loader = new THREE.GLTFLoader(loadingManager);
         
-        // Adjust this path to match your GitHub repository structure
-        // If your repository is at username.github.io/repo-name, use:
-        // const modelUrl = '/repo-name/models/isometricRoom.glb';
-        // If your repository is at username.github.io, use:
+        // Adjust this path to match your repository structure
         const modelUrl = '/Room/isometricRoom.glb';
         
         loader.load(modelUrl, 
@@ -105,11 +113,14 @@
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
                 
-                // Scale the model
+                // Scale the model (increased scale factor)
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const scale = 2 / maxDim;
+                const scale = 8 / maxDim; // Increased from 2 to 8 for larger size
                 model.scale.multiplyScalar(scale);
+                
+                // Lift the model above the grid
+                model.position.y = 0; // Adjust this value if needed
                 
                 scene.add(model);
                 showError('Model added to scene successfully!');
