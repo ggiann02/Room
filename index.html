@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Room</title>
+    <title>Three.js Model Viewer</title>
     <style>
         body { margin: 0; background: black; }
         canvas { display: block; }
@@ -44,24 +44,31 @@
         scene.background = new THREE.Color(0x000000);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            powerPreference: "high-performance"
+        });
+        
+        // Enable shadow mapping
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1;
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        // Reduced ambient light intensity
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
         scene.add(ambientLight);
         
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        // Reduced directional light intensity
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
         directionalLight.position.set(20, 20, 20);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
         scene.add(directionalLight);
-
-        const pointLight1 = new THREE.PointLight(0xffffff, 1);
-        pointLight1.position.set(30, 30, 30);
-        scene.add(pointLight1);
-
-        const pointLight2 = new THREE.PointLight(0xffffff, 1);
-        pointLight2.position.set(-30, 30, -30);
-        scene.add(pointLight2);
 
         camera.position.set(50, 50, 50);
         camera.lookAt(0, 0, 0);
@@ -90,11 +97,24 @@
         };
 
         const loader = new THREE.GLTFLoader(loadingManager);
-        const modelUrl = '/Room/roomcheck.glb';
+        const modelUrl = '/models/isometricRoom.glb';
         
         loader.load(modelUrl, 
             function (gltf) {
                 const model = gltf.scene;
+                
+                // Enable shadows for all meshes in the model
+                model.traverse((node) => {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                        
+                        // Preserve emissive materials
+                        if (node.material) {
+                            node.material.emissiveIntensity = 1;
+                        }
+                    }
+                });
                 
                 // Center the model
                 const box = new THREE.Box3().setFromObject(model);
@@ -152,11 +172,14 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // GUI controls
+        // GUI controls for lighting and materials
         const gui = new dat.GUI();
         const params = {
             modelScale: 50,
             modelRotation: Math.PI,
+            ambientIntensity: 0.2,
+            directionalIntensity: 0.5,
+            exposure: 1,
             adjustScale: function() {
                 const model = scene.children.find(child => child.type === "Group");
                 if (model) {
@@ -179,6 +202,15 @@
 
         gui.add(params, 'modelScale', 1, 200).onChange(() => params.adjustScale());
         gui.add(params, 'modelRotation', 0, Math.PI * 2).onChange(() => params.adjustRotation());
+        gui.add(params, 'ambientIntensity', 0, 1).onChange((value) => {
+            ambientLight.intensity = value;
+        });
+        gui.add(params, 'directionalIntensity', 0, 1).onChange((value) => {
+            directionalLight.intensity = value;
+        });
+        gui.add(params, 'exposure', 0, 2).onChange((value) => {
+            renderer.toneMappingExposure = value;
+        });
     </script>
 </body>
 </html>
