@@ -40,11 +40,9 @@
             document.getElementById('error').textContent = message;
         }
 
-        // Scene setup
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
 
-        // Much larger grid
         const gridHelper = new THREE.GridHelper(100, 100, 0x444444, 0x444444);
         scene.add(gridHelper);
 
@@ -53,7 +51,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Adjusted lighting for better coverage of larger model
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
         
@@ -69,15 +66,13 @@
         pointLight2.position.set(-30, 30, -30);
         scene.add(pointLight2);
 
-        // Adjusted camera position for larger scene
         camera.position.set(50, 50, 50);
         camera.lookAt(0, 0, 0);
 
-        // OrbitControls
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.maxDistance = 200; // Allow camera to zoom out further
+        controls.maxDistance = 200;
 
         const loadingManager = new THREE.LoadingManager();
         const loadingElement = document.getElementById('loading');
@@ -109,24 +104,26 @@
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
                 
-                // Much larger scale factor
+                // Scale the model
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const scale = 50 / maxDim; // Increased scale dramatically
+                const scale = 50;
                 model.scale.multiplyScalar(scale);
                 
+                // Rotate the model 180 degrees around Y axis
+                model.rotation.y = Math.PI; // This is the new line that rotates the model
+                
                 // Adjust model position
-                model.position.y = 0; // Adjust if needed to lift off grid
+                model.position.y = 0;
                 
                 scene.add(model);
                 
-                // After adding model, adjust camera to frame it
+                // After adding model, adjust camera
                 const newBox = new THREE.Box3().setFromObject(model);
                 const centerNew = newBox.getCenter(new THREE.Vector3());
                 const sizeNew = newBox.getSize(new THREE.Vector3());
                 const maxDimNew = Math.max(sizeNew.x, sizeNew.y, sizeNew.z);
                 
-                // Set camera to better view the larger model
                 camera.position.set(
                     centerNew.x + maxDimNew,
                     centerNew.y + maxDimNew,
@@ -161,11 +158,12 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // Add GUI controls for dynamic adjustment
+        // Add GUI controls
         const gui = new dat.GUI();
         const params = {
             modelScale: 50,
             modelHeight: 0,
+            modelRotation: Math.PI, // Added rotation parameter
             adjustScale: function() {
                 const model = scene.children.find(child => child.type === "Group");
                 if (model) {
@@ -183,11 +181,18 @@
                 if (model) {
                     model.position.y = this.modelHeight;
                 }
+            },
+            adjustRotation: function() { // Added rotation function
+                const model = scene.children.find(child => child.type === "Group");
+                if (model) {
+                    model.rotation.y = this.modelRotation;
+                }
             }
         };
 
         gui.add(params, 'modelScale', 1, 200).onChange(() => params.adjustScale());
         gui.add(params, 'modelHeight', -10, 10).onChange(() => params.adjustHeight());
+        gui.add(params, 'modelRotation', 0, Math.PI * 2).onChange(() => params.adjustRotation()); // Added rotation control
     </script>
 </body>
 </html>
