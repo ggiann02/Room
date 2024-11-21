@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Three.js Model Viewer</title>
+    <title>Room</title>
     <style>
         body { margin: 0; background: black; }
         canvas { display: block; }
@@ -124,7 +124,7 @@
                 // Scale the model
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const scale = 50 / maxDim;
+                const scale = 100 / maxDim;
                 model.scale.multiplyScalar(scale);
                 
                 // Rotate the model 180 degrees
