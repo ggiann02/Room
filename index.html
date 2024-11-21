@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Room</title>
+    <title>Three.js Model Viewer</title>
     <style>
         body { margin: 0; background: black; }
         canvas { display: block; }
@@ -42,10 +42,10 @@
 
         // Scene setup
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000); // Black background
+        scene.background = new THREE.Color(0x000000);
 
-        // Larger grid with brighter color
-        const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x444444);
+        // Much larger grid
+        const gridHelper = new THREE.GridHelper(100, 100, 0x444444, 0x444444);
         scene.add(gridHelper);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -53,33 +53,32 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Adjusted lighting for dark background
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Increased intensity
+        // Adjusted lighting for better coverage of larger model
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
         
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5); // Increased intensity
-        directionalLight.position.set(5, 5, 5);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        directionalLight.position.set(20, 20, 20);
         scene.add(directionalLight);
 
-        // Add point lights for better illumination
         const pointLight1 = new THREE.PointLight(0xffffff, 1);
-        pointLight1.position.set(10, 10, 10);
+        pointLight1.position.set(30, 30, 30);
         scene.add(pointLight1);
 
         const pointLight2 = new THREE.PointLight(0xffffff, 1);
-        pointLight2.position.set(-10, 10, -10);
+        pointLight2.position.set(-30, 30, -30);
         scene.add(pointLight2);
 
-        // Camera position
-        camera.position.set(10, 10, 10);
+        // Adjusted camera position for larger scene
+        camera.position.set(50, 50, 50);
         camera.lookAt(0, 0, 0);
 
         // OrbitControls
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
+        controls.maxDistance = 200; // Allow camera to zoom out further
 
-        // Loading manager
         const loadingManager = new THREE.LoadingManager();
         const loadingElement = document.getElementById('loading');
 
@@ -98,10 +97,7 @@
             showError('Error loading model: ' + url);
         };
 
-        // Model loader
         const loader = new THREE.GLTFLoader(loadingManager);
-        
-        // Adjust this path to match your repository structure
         const modelUrl = '/Room/isometricRoom.glb';
         
         loader.load(modelUrl, 
@@ -113,16 +109,31 @@
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
                 
-                // Scale the model (increased scale factor)
+                // Much larger scale factor
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const scale = 10 / maxDim; // Increased from 2 to 8 for larger size
+                const scale = 50 / maxDim; // Increased scale dramatically
                 model.scale.multiplyScalar(scale);
                 
-                // Lift the model above the grid
-                model.position.y = 0; // Adjust this value if needed
+                // Adjust model position
+                model.position.y = 0; // Adjust if needed to lift off grid
                 
                 scene.add(model);
+                
+                // After adding model, adjust camera to frame it
+                const newBox = new THREE.Box3().setFromObject(model);
+                const centerNew = newBox.getCenter(new THREE.Vector3());
+                const sizeNew = newBox.getSize(new THREE.Vector3());
+                const maxDimNew = Math.max(sizeNew.x, sizeNew.y, sizeNew.z);
+                
+                // Set camera to better view the larger model
+                camera.position.set(
+                    centerNew.x + maxDimNew,
+                    centerNew.y + maxDimNew,
+                    centerNew.z + maxDimNew
+                );
+                camera.lookAt(centerNew);
+                
                 showError('Model added to scene successfully!');
             },
             function (xhr) {
@@ -135,7 +146,6 @@
             }
         );
 
-        // Animation loop
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
@@ -143,7 +153,6 @@
         }
         animate();
 
-        // Handle window resize
         window.addEventListener('resize', onWindowResize, false);
 
         function onWindowResize() {
@@ -151,6 +160,34 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
+
+        // Add GUI controls for dynamic adjustment
+        const gui = new dat.GUI();
+        const params = {
+            modelScale: 50,
+            modelHeight: 0,
+            adjustScale: function() {
+                const model = scene.children.find(child => child.type === "Group");
+                if (model) {
+                    const box = new THREE.Box3().setFromObject(model);
+                    const maxDim = Math.max(
+                        box.max.x - box.min.x,
+                        box.max.y - box.min.y,
+                        box.max.z - box.min.z
+                    );
+                    model.scale.setScalar(this.modelScale / maxDim);
+                }
+            },
+            adjustHeight: function() {
+                const model = scene.children.find(child => child.type === "Group");
+                if (model) {
+                    model.position.y = this.modelHeight;
+                }
+            }
+        };
+
+        gui.add(params, 'modelScale', 1, 200).onChange(() => params.adjustScale());
+        gui.add(params, 'modelHeight', -10, 10).onChange(() => params.adjustHeight());
     </script>
 </body>
 </html>
